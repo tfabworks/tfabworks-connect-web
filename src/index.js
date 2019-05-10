@@ -1,8 +1,14 @@
 const Papa = require("papaparse")
 const Chart = require("chart.js")
 
-Papa.parse("/data/csv", {
-   download: true
+console.log("hot")
+Papa.parse("/test.csv", {
+   download: true,
+   header: false,
+   complete: (results, file) => {
+       console.log(results)
+       console.log("fuga")
+   }
 })
 var ctx = document.getElementById('myChart').getContext('2d');
 var chart = new Chart(ctx, {
