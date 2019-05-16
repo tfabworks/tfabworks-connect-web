@@ -2,7 +2,7 @@ const fs = require('fs')
 const mkdirp = require('mkdirp')
 
 const config = {
-    PORT: 3000,
+    PORT: 8080,
     DATA_ROOT:  process.cwd() + "/data_root"
 }
 
