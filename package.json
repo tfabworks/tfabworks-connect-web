@@ -5,6 +5,7 @@
   "scripts": {
     "build": "webpack",
     "dev": "webpack-dev-server",
+    "server": "node src/server",
     "watch": "webpack -w --color",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,8 +17,11 @@
     "webpack-dev-server": "^3.3.1"
   },
   "dependencies": {
+    "body-parser": "^1.19.0",
     "chart.js": "^2.8.0",
+    "express": "^4.16.4",
     "isomorphic-fetch": "^2.2.1",
+    "mkdirp": "^0.5.1",
     "papaparse": "^4.6.3"
   }
 }
