@@ -5,7 +5,7 @@
   "scripts": {
     "build": "webpack",
     "dev:node": "nodemon src/server",
-    "dev:server": "browser-sync start --proxy localhost:8080 --files 'dist/*'",
+    "dev:server": "browser-sync start --port 3000 --proxy localhost:8080 -w --files 'dist/bundle.js'",
     "dev:watch": "webpack -w --color",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -34,6 +34,7 @@
     "papaparse": "^4.6.3",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",
-    "react-router-dom": "^5.0.0"
+    "react-router-dom": "^5.0.0",
+    "url": "^0.11.0"
   }
 }

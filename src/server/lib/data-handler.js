@@ -12,10 +12,11 @@ class DataHandler {
     append(name, value) {
         const filePath = this.getFilePath(name)
         const row = `${Date.now()},${value}\n`
+        console.log(filePath)
         if (fs.existsSync(filePath)) {
             fs.appendFileSync(filePath, row)
         } else {
-            fs.appendFileSync(filePath, `${Date.now()},${name}\n`)
+            fs.appendFileSync(filePath, `time,${name}\n`)
             fs.appendFileSync(filePath, row, {flag: "a"})
         }
     }
