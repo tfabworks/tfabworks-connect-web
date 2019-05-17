@@ -1,19 +1,24 @@
-const express = require('express')
+import * as express from 'express'
+import * as bodyParser from 'body-parser'
 const server = express()
-const bodyParser = require('body-parser')
 
-const env = require('../env')
-const DataHandler = require('./lib/data-handler')
+import env from '../env'
+import DataHandler from './lib/data-handler'
 
 server.use(bodyParser.json());
 
-server.get('/', (req, res)=> {
+server.get('/', (_, res)=> {
     res.send('hello world')
 })
 server.use('/static', express.static('static'))
 
+interface Received {
+  uuid: string;
+  n: string;
+  v: string;
+}
 server.post('/api/', (req, res) => {
-    const body = req.body
+    const body: Received = req.body
     const dataHandler = new DataHandler(body.uuid)
     dataHandler.append(body.n, body.v)
     res.send("post: /api/")
