@@ -3,7 +3,12 @@ import * as bodyParser from 'body-parser'
 const server = express()
 
 import env from '../env'
-import DataHandler from './lib/data-handler'
+import {DataHandler, Mode} from './lib/data-handler'
+
+//console.log(Mode)
+const dataHandler = new DataHandler({
+  mode: Mode.Database
+})
 
 server.use(bodyParser.json());
 
@@ -17,10 +22,11 @@ interface Received {
   n: string;
   v: string;
 }
+
 server.post('/api/', (req, res) => {
     const body: Received = req.body
-    const dataHandler = new DataHandler(body.uuid)
-    dataHandler.append(body.n, body.v)
+    const uuid = req.query.uuid
+    dataHandler.append(uuid, body.n, body.v)
     res.send("post: /api/")
 })
 
@@ -33,8 +39,7 @@ server.get('/api/file/*', (req, res) => {
 
 server.get('/api/list', (req, res) => {
   const q = req.query
-  const dataHandler = new DataHandler(q.uuid)
-  const json = dataHandler.list()
+  const json = dataHandler.list(q.uuid)
   res.header('content-type', 'application/json')
   res.send(JSON.stringify(json))
 })
