@@ -2,7 +2,6 @@ import * as fs  from 'fs'
 import * as mkdirp  from'mkdirp'
 import env from'../../env'
 import * as sqlite3 from 'sqlite3'
-import * as LRU from 'lru-cache'
 
 export enum Mode {Database, Csv}
 
@@ -10,47 +9,41 @@ export interface Options {
     mode: Mode;
 }
 
+type FilePath = string;
+
 export class DataHandler {
-    dbCache: LRU<string, sqlite3.Database>;
     options: {
         mode: Mode;
     }
 
     constructor(options: Options) {
         this.options = options
-        this.dbCache = new LRU({
-            max: 50,
-            dispose: (key, n) => {
-                n.close((err) => {
-                    if(err) console.error(err)
-                })
-            },
-            maxAge: 1000* 60 * 60
-        })
         if (!fs.existsSync(DataHandler.ROOT))
             mkdirp.sync(DataHandler.ROOT)
     }
-    
-    public list(uuid: string): string[] {
-        if (this.options.mode === Mode.Database) {
-            const conn = this.getConn(uuid)
-            conn.all("SELECT name FROM sqlite_master where type='table';", (err, rows) => {
-                if (err)
-                  console.warn(err)
-                console.log(rows)
-            })
-            return []
-        } else if (this.options.mode === Mode.Csv)
-            return fs.readdirSync(this.getUserdir(uuid))
-        else
-            throw new Error()
+
+    public list(uuid: string): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            if (this.options.mode === Mode.Database) {
+                const conn = this.getConn()
+                conn.all("SELECT DISTINCT category FROM master where uuid=?;", uuid, (err, rows) => {
+                    if (err)
+                        console.warn(err)
+                    console.log(rows.map(i => i.category))
+                    resolve(rows.map(i => i.category))
+                })
+            } else if (this.options.mode === Mode.Csv)
+                resolve(fs.readdirSync(this.getUserdir(uuid)))
+            else
+                reject(new Error())
+        })
     }
 
     public append(uuid: string, table: string, value: string) {
         const now = Date.now()
         if (this.options.mode === Mode.Database) {
-            const conn = this.getConn(uuid)
-            conn.run("INSERT INTO ? (time, ?) VALUES (?, ?);", [table, table, now, value], (err) => {
+            const conn = this.getConn()
+            conn.run("INSERT INTO master (uuid, category, time, value) VALUES (?, ?, ?, ?);", [uuid, table, now, value], (err) => {
                 if (err)
                     console.warn(err)
             })
@@ -67,17 +60,31 @@ export class DataHandler {
         }
     }
 
-    public tail(uuid: string, table: string) {}
+    public tail(uuid: string, table: string) {
+        return new Promise((resolve, reject) => {
+            const conn = this.getConn()
+            conn.all("SELECT * FROM master WHERE uuid = ? AND category = ? ORDER BY time DESC LIMIT 20;", [uuid, table], (err, rows) => {
+                if (err)
+                    console.error(err)
+                console.log(rows)
+                resolve(rows)
+            })
+        })
+    }
 
     public rm(uuid: string, table: string){}
 
-    private getConn(uuid: string) {
-        let conn: sqlite3.Database|undefined = this.dbCache.get(uuid)
-        if (!conn) {
-            conn = new sqlite3.Database(this.getDbFilePath(uuid))
-            this.dbCache.set(uuid, conn)
-        }
-        console.log(conn)
+    private getConn() {
+        const conn = new sqlite3.Database(this.getDbFilePath)
+        conn.run(`CREATE TABLE IF NOT EXISTS master
+                    ( uuid text
+                    , category text
+                    , time integer
+                    , value text
+                 );`, (err) => {
+            if (err)
+                console.warn(err)
+        })
         return conn
     }
 
@@ -86,19 +93,22 @@ export class DataHandler {
         return fs.readFileSync(filePath)
     }
 
-    getDbFilePath(uuid: string) {
-        return this.getUserdir(uuid) + "/" + "userdb.sqlite3"
-    }
-
-    getFilePath(uuid: string, name: string): string {
+    getFilePath(uuid: string, name: string): FilePath {
         return this.getUserdir(uuid) + "/" + name
     }
 
-    getUserdir(uuid: string): string {
-        return DataHandler.ROOT + "/" + uuid
+    getUserdir(uuid: string): FilePath {
+        const tmpDir = DataHandler.ROOT + "/" + uuid
+        if (!fs.existsSync(tmpDir))
+            mkdirp.sync(tmpDir)
+        return tmpDir
     }
 
-    static get ROOT(): string {
+    get getDbFilePath(): FilePath {
+        return DataHandler.ROOT + "/" + "userdb.sqlite3"
+    }
+
+    static get ROOT(): FilePath {
         return env.DATA_ROOT
     }
 }

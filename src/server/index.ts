@@ -23,6 +23,16 @@ interface Received {
   v: string;
 }
 
+server.get('/api/', (req, res) => {
+  const uuid = req.query.uuid
+  const category = req.query.category
+  dataHandler.tail(uuid, category)
+  .then(v => {
+    res.header('content-type', 'application/json')
+    res.send(JSON.stringify(v))
+  })
+})
+
 server.post('/api/', (req, res) => {
     const body: Received = req.body
     const uuid = req.query.uuid
@@ -38,10 +48,12 @@ server.get('/api/file/*', (req, res) => {
 })
 
 server.get('/api/list', (req, res) => {
-  const q = req.query
-  const json = dataHandler.list(q.uuid)
-  res.header('content-type', 'application/json')
-  res.send(JSON.stringify(json))
+    const q = req.query
+    dataHandler.list(q.uuid)
+    .then( v => {
+      res.header('content-type', 'application/json')
+      res.send(JSON.stringify(v))
+    })
 })
 
 server.use('/my/', express.static('dist'))
