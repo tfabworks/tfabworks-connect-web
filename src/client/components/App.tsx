@@ -1,7 +1,6 @@
 import * as React from "react"
 import * as Chart from 'chart.js'
 import * as url from 'url'
-import { element } from "prop-types";
 
 interface Location {
     hash: string;
@@ -11,7 +10,6 @@ interface Location {
 }
 
 interface IProps {
-    location: Location;
 }
 
 interface IState {
@@ -25,7 +23,7 @@ class App extends React.Component<IProps, IState> {
 
     constructor(props: IProps) {
         super(props)
-        const urlobj = url.parse(url.format(this.props.location), true)
+        const urlobj = url.parse(url.format(location.href), true)
         this.uuid = urlobj.query.uuid as string;
         this.chart = []
         this.state = {
@@ -34,13 +32,14 @@ class App extends React.Component<IProps, IState> {
     }
 
     public componentDidMount() {
-        fetch(`/api/list?uuid=${this.uuid}`)
+        fetch(`https://tfab-connect-web-apim.azure-api.net/v1/list?uuid=${this.uuid}`)
         .then( res => res.json())
         .then( data => {
+	    const graphs = data.map((v: any) => v.category)
             this.setState({
-                graphs: data
+                graphs: graphs
             })
-            data.forEach((name: string) => {
+            graphs.forEach((name: string) => {
                 this.renderGraph(name)
             })
         })
@@ -61,11 +60,12 @@ class App extends React.Component<IProps, IState> {
     }
 
     private renderGraph(graphName: string) {
-        fetch(`/api/?category=${graphName}&uuid=${this.uuid}`)
+        fetch(`https://tfab-connect-web-apim.azure-api.net/v1/api?category=${graphName}&uuid=${this.uuid}`)
         .then( res => res.json())
-        .then( json => json.map((v: any) => {return {x: v.time, y: v.value}} ))
+        .then( json => {
+		return json.map((v: any) => {return {x: v.time, y: v.value}})
+		})
         .then( data => {
-            console.log(data)
             const canvas = document.getElementById(graphName) as HTMLCanvasElement //.getContext('2d');
             const ctx = canvas.getContext('2d')
             const lineColor = this.randomColor()
@@ -93,11 +93,10 @@ class App extends React.Component<IProps, IState> {
     }
 
     private updateGraph(graphName: string) {
-        return fetch(`/api/?category=${graphName}&uuid=${this.uuid}`)
+        return fetch(`https://tfab-connect-web-apim.azure-api.net/v1/api?category=${graphName}&uuid=${this.uuid}`)
         .then( res => res.json())
-        .then( json => json.map((v: any) => {return {x: v.time, y: v.value}} ))
+        .then( json => json.map((v: any) => {return {x: v.time, y:v.value}} ))
         .then(data => {
-            console.log(this.chart[graphName].data.datasets[0].data)
             this.chart[graphName].data.datasets[0].data = data
             this.chart[graphName].update()
         })
