@@ -35,7 +35,7 @@ class App extends React.Component<IProps, IState> {
         fetch(`https://tfab-connect-web-apim.azure-api.net/v1/list?uuid=${this.uuid}`)
         .then( res => res.json())
         .then( data => {
-	    const graphs = data.map((v: any) => v.category)
+	    const graphs = data.map((v: any) => v.category).sort()
             this.setState({
                 graphs: graphs
             })
@@ -43,18 +43,25 @@ class App extends React.Component<IProps, IState> {
                 this.renderGraph(name)
             })
         })
+        // const graphs = ["temp", "brightness", "activeCount"]
+        // this.setState({
+        //     graphs: graphs
+        // })
+        // graphs.forEach((name) => {
+        //     this.renderGraph(name)
+        // })
         this.start()
     }
 
     public render() {
         return (
-            <div>
+            <div id="main-container">
                 <div className="chart-container">
+                <div><img src="./logo_tfabworks.png" /></div>
                 { this.state.graphs.map( (name, i) =>
                     <canvas id={name} key={i} className="chart"/>
                 )}
                 </div>
-                <div id="leftsidenav" className="sidenav" />
             </div>
         )
     }
@@ -63,16 +70,17 @@ class App extends React.Component<IProps, IState> {
         fetch(`https://tfab-connect-web-apim.azure-api.net/v1/api?category=${graphName}&uuid=${this.uuid}`)
         .then( res => res.json())
         .then( json => {
-		return json.map((v: any) => {return {x: v.time, y: v.value}})
+		return json.map((v: any) => {return {x: v.time * 1000, y: v.value}})
 		})
         .then( data => {
             const canvas = document.getElementById(graphName) as HTMLCanvasElement //.getContext('2d');
             const ctx = canvas.getContext('2d')
-            const lineColor = this.randomColor()
+            // const lineColor = this.randomColor()
+            const lineColor = "rgb(0,0,0)"
             this.chart[graphName] = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: [],
+                    //labels: [],
                     datasets: [{
                     label: graphName,
                     backgroundColor: lineColor,
@@ -82,6 +90,13 @@ class App extends React.Component<IProps, IState> {
                     }]
                 },
                 options: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: `cloud variable: ${graphName}`
+                    },
                     scales: {
                     xAxes: [{
                         type: 'time'
@@ -95,7 +110,7 @@ class App extends React.Component<IProps, IState> {
     private updateGraph(graphName: string) {
         return fetch(`https://tfab-connect-web-apim.azure-api.net/v1/api?category=${graphName}&uuid=${this.uuid}`)
         .then( res => res.json())
-        .then( json => json.map((v: any) => {return {x: v.time, y:v.value}} ))
+        .then( json => json.map((v: any) => {return {x: v.time * 1000, y:v.value}} ))
         .then(data => {
             this.chart[graphName].data.datasets[0].data = data
             this.chart[graphName].update()
